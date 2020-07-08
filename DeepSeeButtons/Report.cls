@@ -186,10 +186,11 @@ ClassMethod DrawPage(pSeed As %String) As %Status
 	
 	Do ##class(DeepSeeButtons.Report).DrawMainDiv() // DONE
 	//Do LogDeepSeeSetupSection   //Note Ale: here rs.%Execute("") messes up my ZW in DumpToFile
-	Do ##class(DeepSeeButtons.Report).DrawDeepSeeSetup("SAMPLES",tTracking)
+	Do ##class(DeepSeeButtons.Report).DrawDeepSeeSetup("SAMPLES",tTracking) // DONE
 	//Do LogServerSetup
-	Do ##class(DeepSeeButtons.Report).DrawServerSetup(tTracking)
+	Do ##class(DeepSeeButtons.Report).DrawServerSetup(tTracking) // DONE
 	//Do LogCubeSection
+	Do ##class(DeepSeeButtons.Report).DrawCubeSection(tTracking)
 	//Do LogBuildSynchSection
 	//Do LogCubeRegistry
 	//Do:(($D(cubeList)'=0) && (cubeList'="")) LogDetailedCubeInfo
@@ -796,6 +797,159 @@ ClassMethod WriteDiskSpace()
 		Quit:AtEnd
 	}	
 	Quit
+}
+
+ClassMethod DrawCubeSection(pNamespace As %String, pTracking As %Boolean=0)
+{
+	Try {
+		Set tOriginalNS=$NAMESPACE
+		Do ##class(DeepSeeButtons.Utils).WriteUpdate("Getting cube information")
+		Do:pTracking ##class(DeepSeeButtons.Utils).WriteTrack("cubelog","Getting cube information","")
+		Do ##class(DeepSeeButtons.Utils).WriteLog("<div id=""CubesDiv"" onmouseover=""highlightLink(this,1)"" onmouseout=""highlightLink(this,0)"">")
+		Do ##class(DeepSeeButtons.Utils).WriteParagraph("cubelist","Cubes in "_pNamespace)
+		ZN pNamespace
+	 	Do ##class(%DeepSee.Utils).%GetCubeList(.plist)
+	 	ZN tOriginalNS
+		Set cubenode=$order(plist(""))
+		If cubenode=""{
+			Do ##class(DeepSeeButtons.Utils).WriteLog("<p>There are no cubes in this namespace</p>")
+	 	} Else {
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<table id=""CubeTable"" border=""0"" cellpadding=""7"" cellspacing=""3"" ""class=""zebraStriped"">",2)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<tbody>",4)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<tr>",6)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th onclick=""sortTable(this,0,1)"">Cube Name</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th onclick=""sortTable(this,1,1)"">Display Name</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th onclick=""sortTable(this,2,1)"">Source Class</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th onclick=""sortTable(this,3,1)"">Cube Class</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th onclick=""sortTable(this,4,1)"" title=""Does not reflect build order"">Related Cubes</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("</tr>",6)
+		 	Set storageList=""
+			Set dataConnectorList=""			
+			Set abstractcount = 0
+			Set versionedcount = 0
+			For {
+				Quit:cubenode=""				//Do the work to get info and write out the table
+				Set cubename=$list(plist(cubenode),1)
+				ZN pNamespace
+				Try {
+					Set versionedCube = ##class(%DeepSee.CubeVersion.Utils).%GetVersionedCubeName(cubename)
+					Set isVersioned = ##class(%DeepSee.CubeVersion.Utils).%IsVersion(versionedCube)
+				} Catch {
+					Set versionedCube = cubename
+					Set isVersioned = 0
+				}				
+				If ##class(%DeepSee.Utils).%IsCubeAbstract(cubenode){	//cube is abstract
+					//Don't run if Health insight because there are too many abstract cubes
+					Set:('isInsight) abstractList($I(abstractcount)) = cubenode
+				} ElseIf isVersioned {
+					Set versionedList($I(versionedcount)) = versionedCube
+				} ElseIf (cubename'="") {
+					Do ##class(DeepSeeButtons.Utils).WriteLog("<tr>",6)
+					Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_cubename_"</td>",8)					//cubename					
+					Set cubecaption=##class(%DeepSee.Utils).%GetCubeCaption(cubename)
+					Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_cubecaption_"</td>",8)
+					Set cubeclass=##class(%DeepSee.Utils).%GetCubeClass(cubename) //cube class
+					Set lastmod=$zdt($LG(plist(cubenode),3),3)				//last cube compile
+					Set type=$LG(plist(cubenode),4)							//subject area or cube?
+					Set sourceClass = $$GetSourceClass(cubenode,type)
+					Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_sourceClass_"</td>",8)		//writes sourceClass
+					Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_cubeclass_"</td>",8)				
+					Write !,?8,"<td>" Do GetRelationships(cubenode)  Write "</td>"		//RelatedCubes
+					Do ##class(DeepSeeButtons.Utils).WriteLog("</tr>",6)
+				}
+				Set cubenode=$order(plist(cubenode))
+			}
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("</tbody>",4)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("</table>",2)
+			//Write out list of special cubes: versioned, abstract, with SQL Storage, based on Data Connectors
+			Do ##class(DeepSeeButtons.Utils).WriteHeader4("Versioned Cubes",2)
+			If versionedcount { 
+				Set ind = $O(versionedList(""))
+				While ind {
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<p>"_versionedList(ind)_"</p>",2)
+						Set ind = $O(versionedList(ind))
+					}
+			}			
+			Do ##class(DeepSeeButtons.Utils).WriteHeader4("Abstract Cubes",2)
+			If abstractcount { 
+				Set ind = $O(abstractList(""))
+				While ind {
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<p>"_abstractList(ind)_"</p>",2)
+						Set ind = $O(abstractList(ind))
+					}
+			}
+			Do ##class(DeepSeeButtons.Utils).WriteHeader4("Cubes with Source Classes Based on SQL Storage",2)
+			Set ptr=0
+			If ($D(storageList) && (storageList'="")){
+				While $LISTNEXT(storageList,ptr,class){
+					Do ##class(DeepSeeButtons.Utils).WriteLog("<p>"_class_"</p>",2)
+				}
+			}
+			Do ##class(DeepSeeButtons.Utils).WriteHeader4("Cubes Based on Data Connectors",2)
+			If $D(dataConnectorList){	
+					Set ptr=0
+					While $LISTNEXT(dataConnectorList,ptr,class){
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<p>"_class_"</p>",2)
+					}
+			}
+			Do ##class(DeepSeeButtons.Utils).WriteHeader4("Build Order for Related Cubes",2)
+			Do ##class(%DeepSee.CubeManager.Utils).GetCubeGroups(.groups)
+			Set relatedCubesExist = 0
+			//Invert this array from groups(group,cube)=order to groupOrderCube(group,order)=cube
+			Set group = $O(groups(""))
+			While (group'="") {
+				Set cube = $O(groups(group,""))
+				While (cube'="") {
+					//NB: order can be ""
+					Set order = $S(groups(group,cube)'="":groups(group,cube),1:"-")
+					Set:('relatedCubesExist && (order > 1)) relatedCubesExist = 1 
+					Set groupOrderCube(group,order) = cube
+					Set cube = $O(groups(group,cube))
+				}
+				Set group = $O(groups(group))
+			}
+			//Print a table with build order for cubes with relationships
+			If relatedCubesExist {
+			Do ##class(DeepSeeButtons.Utils).WriteLog("<table id=""BuildOrderTable"" border=""0"" cellpadding=""7"" cellspacing=""3"" "_"class=""tableWithBorders tableTabbed"">",2)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<tbody>",4)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<tr>",6)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th>Cube Name</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th>Cube Group</th>",8)
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("<th>Order</th>",8)		 	
+		 	Do ##class(DeepSeeButtons.Utils).WriteLog("</tr>",6)
+			Set group = $O(groupOrderCube(""))
+			While (group'="") {
+				Set last = $O(groupOrderCube(group,""),-1)
+				If (last=1) {
+					Set group = $O(groupOrderCube(group))
+				} Else {					
+					Set order = $O(groupOrderCube(group,""))
+					While (order'="") {
+						Set cube = groupOrderCube(group,order)
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<tr>",6)	//background-color: #ccc;
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_cube_"</td>",10)
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_group_"</td>",10)
+						Do ##class(DeepSeeButtons.Utils).WriteLog("<td>"_order_"</td>",10)
+						Do ##class(DeepSeeButtons.Utils).WriteLog("</tr>",6)
+						Set order = $O(groupOrderCube(group,order))
+					}
+					Set group = $O(groupOrderCube(group))
+				}
+			}
+			Do ##class(DeepSeeButtons.Utils).WriteLog("</tbody>",4)
+			Do ##class(DeepSeeButtons.Utils).WriteLog("</table>",2)
+			} Else {
+				Do ##class(DeepSeeButtons.Utils).WriteLog("No related cubes",4)
+			}
+	 	}
+	 	Do ##class(DeepSeeButtons.Utils).WriteLog("</div>")
+ 	} catch exc {
+	 	Use PDev
+	 	zw exc
+	}
+	ZN "%SYS"
+ 	Quit
+	
 }
 
 }
