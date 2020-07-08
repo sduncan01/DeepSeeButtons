@@ -1,5 +1,7 @@
 # DeepSeeButtons
-Script used by the DeepSee support group at InterSystems to gather system information. 
+Script used by the DeepSee support group at InterSystems to gather system information.
+**DeepSeeButtons will be included in InterSystems IRIS starting in version 2020.3**
+This GitHub version will be maintained and available for earlier versions
 
 ### Installation
 
