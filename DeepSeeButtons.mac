@@ -9,9 +9,10 @@ DeepSeeButtons(namespace="ask", cubeString="ask", getLogs="", LogFile="", tracki
 	;You can use the following optional arguments:
 	;namespace:		namespace where this routine will run, e.g. "SAMPLES". If "" the current namespace will be chosen
 	;cubeString: 	comma separated list of cubes, e.g. "patients,holefoods", "ALL", or "" for no cubes at all
-	;getLogs:		""/0/1/anything to  ask to/do not/do/do not  include cconsole.log, Query Log, and DeepSee logs, respectively
+	;getLogs:		boolean flag to control inclusion of the cconsole.log, Query Log, and DeepSee logs. 
+	;				A value of getLogs="" will prompt the user to make this choice from the interactive dialog 
 	;LogFile:		output file. By default the output file will be stored in the /mgr directory
-	;tracking:		Used by the UI in SMP to log into ^IRIS.Temp.DeepSeeButtonsTrack and track this routine
+	;tracking:		Used to log progress into ^IRIS.Temp.DeepSeeButtonsTrack and track this routine
 	;
 	;Example using arguments:
 	;Do ^DeepSeeButtons("SAMPLES","PATIENTS",1,"/home/amarin/Desktop/DSbuttons.html",0)
@@ -39,7 +40,7 @@ DeepSeeButtons(namespace="ask", cubeString="ask", getLogs="", LogFile="", tracki
 	;		-Disk space
 	;		-RAM
 	;	3) Cubes in namespace
-	;		-Cubes table with Cube Name, Display name, Source Class, Cube Class, Related Cubes, Related Cubes	
+	;		-Cubes table with Cube Name, Display name, Source Class, Cube Class, Related Cubes	
 	;		-Versioned cubes
 	;		-Abstract cubes
 	;		-Cubes with Source Classes Based on SQL Storage
@@ -76,6 +77,12 @@ StartDialog
 	New (namespace,cubeString,getLogs,LogFile,tracking)
 	Set origNS=$Namespace
 	Try {
+		If '$system.Security.Check("%DeepSee_Admin","USE") {
+			// Require %DeepSee_Admin in order to run this utility
+			Write !,"This tool requires the %DeepSee_Admin resource to run"
+			Quit
+		}
+		
 		Do:tracking WriteTrack("setup","Starting DeepSeeButtons","")
 		Set PDev=$Principal
 		Use PDev
@@ -108,6 +115,7 @@ GetNamespace(namespace) {
 		Set namespace = $Namespace
 		Write !,"Running in namespace: "_namespace
 	}
+	
 	//Ask user if the namespace variable is not given
 	Set:namespace="ask" namespace=""
 	Set namespace=$$ValidateNamespace(namespace)	//Make sure input namespace exists
@@ -768,31 +776,6 @@ LogDeepSeeSetupSection
 		Do WriteLog("</td>",8)
 		Do WriteLog("</tr>",6)
 	
-	
-	/*
-	Do WriteLog("<tr>",6)
-	Do WriteLog("<td>",8)
-	Do WriteHeader4("DeepSee-enabled webapps",10)
-	Set rsWeb=##class(%ResultSet).%New("Security.Applications:Detail")
-	Do rsWeb.Execute()
-	Set onefound=0
-	For {
-		Quit:'rsWeb.Next()
-		If rsWeb.DeepSeeEnabled="Yes" {
-			Do WriteLog("<p>"_rsWeb.Name_"</p>",10)
-			Set onefound=1
-		}
-		Do WriteLog("<p>"_rsWeb.Name_"</p>",10)
-		If $D(^SYS("Security", "CSP", "AllowPrefix", rsWeb.Name_"/","%DeepSee.")) {
-			Do WriteLog("<p>--"_rsWeb.Name_"</p>",10)
-		}
-	}
-	Do:'onefound WriteLog("<p>-</p>",10)
-	Do WriteLog("</td>",8)
-	Do WriteLog("</tr>",6)	
-	*/
-	
-	
 		//DeepSee overrides
 		If (isInsight || isTrak) {
 			If (nOverrides<10) {
@@ -833,6 +816,7 @@ LogServerSetup()
 	Do WriteLog("<div id=""ServerDetailsDiv"" onmouseover=""highlightLink(this,1)"""_
 	            " onmouseout=""highlightLink(this,0)"">")
 	Do WriteParagraph("serverdetails","Server Details",1)
+	
 	///The old "Configuration" section
 	Do WriteLog("<table id=""ServerDetailsTable"" cellpadding=""7"" cellspacing=""3"" "_
 	            "class=""tableWithBorders tableTabbed"">",2)
@@ -869,6 +853,7 @@ LogServerSetup()
 	Do WriteLog("<p>"_CurUser_" on "_$ZD($ZDH(%DAT,7),3)_" at "_%TIM_"</p>",10)
 	Do WriteLog("</td>",8)
 	Do WriteLog("</tr>",6)
+	
 	//Last Caché Startup
 	Do WriteLog("<tr>",6)
 	Do WriteLog("<td>",8)
@@ -880,9 +865,11 @@ LogServerSetup()
 	Do WriteLog("<td>",8)
 	Do WriteHeader4("Cach&eacute; Version String",10)
 	Do WriteLog("<p>"_CacheVerStr_"</p>",10)
+	
 	//Set isInsight=$$isHealthInsight(namespace) 	//Determine if this is a Health Insight namespace (1 if yes)
 	Do:isInsight WriteLog("<p>"_##class(%ZHSLIB.HealthShareMgr).VersionInfo()_"</p>",8)
 	Do WriteAdhocPatch //write information on Adhoc patch
+	
 	//Current Locale subsection
 	Do WriteLog("</td>",8)
 	Do WriteLog("</tr>",6)	
@@ -891,33 +878,28 @@ LogServerSetup()
 	Do NLS
 	Do WriteLog("</td>",8)
 	Do WriteLog("</tr>",6)	
+	
 	//Operating System Version section
 	Do WriteLog("<tr>",6)
 	Do WriteLog("<td>",8)	
 	Do OSVer
 	Do WriteLog("</td>",8)
 	Do WriteLog("</tr>",6)	
-	/*Do WriteLog("<tr>",6)
-	Do WriteLog("<td>",8)
-	Do WriteLog("<h4>Operating System</h4>",10)	
-	Do WriteLog("<p>",10)
-	Do OSVer^Buttons
-	Do WriteLog("</p>",10)
-	Do WriteLog("</td>",8)
-	Do WriteLog("</tr>",6)
-	*/	
+
 	//Disk space
 	Do WriteLog("<tr>",6)
 	Do WriteLog("<td>",8)
 	Do DiskSpace
 	Do WriteLog("</td>",8)
 	Do WriteLog("</tr>",6)
+	
 	//RAM physical memory space
 	Do WriteLog("<tr>",6)
 	Do WriteLog("<td>",8)	
 	Do RAM
 	Do WriteLog("</td>",8)
 	Do WriteLog("</tr>",6)
+	
 	//Close the table
 	Use PDev
 	If OS?1"Win".e!(OS="VMS"),OS'="Win9x" 
@@ -2444,8 +2426,6 @@ LogTasks
 			Do WriteLog("<td>"_rs.%Get("Suspended")_"</td>",8)
 			Do WriteLog("<td>"_rs.%Get("Last Finished")_"</td>",8)
 			Do WriteLog("<td>"_rs.%Get("Next Scheduled")_"</td>",8)
-			
-			//Get frequency Set task = ##class(%SYS.Task).%OpenId(rs.%Get("ID"),0,.status)
  
 			Do WriteLog("</tr>",6)
 		}
@@ -2734,7 +2714,8 @@ DialogCubes(namespace) {
 		Set cubeList=""
 		Quit cubeList
 	}
-	For i=1:1 {
+	Do {
+		Set cube=""
 		Write !,"Give cube name for detailed cube info or press enter to continue: "
 		Read cube
 		Set:cube="?" cube=$$ListCubes()
@@ -2751,13 +2732,13 @@ DialogCubes(namespace) {
 			} ElseIf ##class(%DeepSee.Utils).%CubeExists(cube,.status)'=1 {
 				Write !,cube," is an invalid cube selection: "
 				Write !,"Enter '?' to see list of cubes in the "_namespace_" namespace",!
-				Set cube=""
+				//Set cube=""
 			} Else {
 				Set cube=$ZCONVERT(cube,"t")		//Make cube name uppercase to normalize names
 				Set cubeString=cubeString_","_cube
 			}
 		}
-	}
+	} While (cube'="")&&(cube'="QUIT")&&(cube'="Q")
 	Set:$E(cubeString,0,1)="," cubeString=$p(cubeString,",",2,*)	//Eliminate leading comma
 	Set cubeSelection=$LFS(cubeString,",")		//Create list
 	ZN "%SYS"
@@ -2768,13 +2749,14 @@ GetAllCubes(namespace)
 	Set cubeString=""
 	ZN namespace
 	Do ##class(%DeepSee.Utils).%GetCubeList(.cubeList,,1)
-	Set cubetmp=""
-	Set cubeString=""			
-	For i=1:1 {
-		Set cubetmp=$Order(cubeList(cubetmp))
-		Quit:cubetmp=""
+	Set cubeString=""
+	
+	Set cubetmp=$Order(cubeList(""))			
+	While (cubetmp'="") {
 		Set cubeString=cubeString_","_cubetmp
+		Set cubetmp=$Order(cubeList(cubetmp))
 	}
+	
 	Set cubeString=$P(cubeString,",",2,*)
 	ZN "%SYS"
 	Quit cubeString
@@ -2823,21 +2805,16 @@ ListCubes(){
 	Do ##class(%DeepSee.Utils).%GetCubeList(.cubeList,,1)
 	Write !, "Cubes in this namespace: ",!!
 	Set cubetmp=""
-	//For i=1:1{
-	While 1 {
-		Set cubetmp=$order(cubeList(cubetmp))
-		Quit:cubetmp=""
-		//Write i_") "_cubetmp,!
+
+	Set cubetmp=$order(cubeList(""))
+	While (cubetmp'="") {
 		Write cubetmp,!
+		Set cubetmp=$order(cubeList(cubetmp))
 	}
-	Write "ALL",!	
-	//Write !, "Select a cube name or press enter to continue: "
+	Write "ALL",!
 	Write !, "Give cube name for detailed cube info or press enter to continue: "
 	Read cube
-	/*If cube'=""{
-		Write !,"Getting detailed information on "_cube
-		Hang 1
-	}*/
+	
 	Quit cube		//returns "" if no cube number entered
 }
  
@@ -2847,7 +2824,6 @@ LongName(x)
 	If OS="VMS" Quit x
 	Set Space=$Char(32),Quote=$Char(34)
 	If x[Space Set x=Quote_x_Quote
-	//If x[Space Set x=$ZUtil(147,x)
 	Quit x
  
 VMSCanonize(Dir)
@@ -2895,7 +2871,6 @@ WriteLastStartup
 isHealthInsight(namespace){
 	Try{
 		ZN namespace
-		//Set x=##class(HSAA.Utils).GetLogDirectory()				//Just testing to see if this method works
 		Set HealthShare=##class(%SYSTEM.License).GetFeature(12) 	//Look in license for HealthShare Foundation
 		ZN "%SYS"
 		Return HealthShare
@@ -3012,19 +2987,24 @@ CountNodes(namespace,g){
 
 GetLastBuild(CubeEvent,cubename) [cubename,CubeEvent,cubekey,cubeevent,totaltime,cubesize,finishtime,factsupdated,SQLCODE] {
 	new cubekey,totaltime,cubesize,finishtime,factsupdated,SQLCODE
-	If $D(cubename) {
-		&sql(SELECT TOP 1 CubeKey,TotalTime,CubeSize,FinishTime,FactsUpdated
-			INTO :cubekey,:totaltime,:cubesize,:finishtime,:factsupdated
-			FROM %DeepSee_CubeManager.CubeEvent
-			WHERE CubeEvent=:CubeEvent AND CubeKey=:cubename
-			ORDER BY FinishTime DESC)
-	} Else {
-		&sql(SELECT TOP 1 CubeKey,TotalTime,CubeSize,FinishTime,FactsUpdated
-			INTO :cubekey,:totaltime,:cubesize,:finishtime,:factsupdated
-			FROM %DeepSee_CubeManager.CubeEvent
-			WHERE CubeEvent=:CubeEvent 
-			ORDER BY FinishTime DESC)
+		
+	Set sql ="SELECT TOP 1 CubeKey,TotalTime,CubeSize,FinishTime,FactsUpdated " _
+				"FROM %DeepSee_CubeManager.CubeEvent " _
+				"WHERE CubeEvent='"_CubeEvent_"' "_ 
+				$S($D(cubename):"AND CubeKey='"_cubename_"' ",1:"") _
+				"ORDER BY FinishTime DESC"
+	Set rs = ##class(%SQL.Statement).%ExecDirect(.S,sql)
+	
+	Set SQLCODE=""
+	If rs.%Next() {
+		Set cubekey = rs.%Get("CubeKey")
+		Set totaltime = rs.%Get("TotalTime")
+		Set cubesize = rs.%Get("CubeSize")
+		Set finishtime = rs.%Get("FinishTime")
+		Set factsupdated = rs.%Get("FactsUpdated")
+		Set SQLCODE = rs.%SQLCODE
 	}
+	
 	IF SQLCODE=0 {
 		If CubeEvent="Synch"{
     		Set string=$FNUMBER(factsupdated,"O,")_" facts synched on "_finishtime_" in "_totaltime_" seconds"
@@ -3163,12 +3143,13 @@ GetBuildTime(cube)
 	[time,cube] PUBLIC{
 	new time
 	Set cube=$zconvert(cube,"u")
-	&sql(SELECT TotalTime into :time 
-	FROM %DeepSee_CubeManager.CubeEvent 
-	where cubekey=:cube and cubeevent='Build' 
-	order by finishtime desc)
-	If $D(time){
-		Quit time
+	
+	Set sql ="SELECT TotalTime FROM %DeepSee_CubeManager.CubeEvent where cubekey='" _
+			cube _ "' and cubeevent='Build' order by finishtime desc"
+	Set rs = ##class(%SQL.Statement).%ExecDirect(.S,sql)
+	
+	If rs.%Next() {
+		Quit rs.%Get("TotalTime")
 	} Else{
 		Quit ""
 	}
@@ -3318,17 +3299,12 @@ lastNQueries(numqueries)
 				Do WriteLog( i_") "_$$encode(query),0)
 			}
 		}
-		//Do WriteLog("")
 	}
 	Do WriteLog("</pre>",2)
 	Quit
  
 encode(string) {
-	Set out = $REPLACE(string,"<","&lt;")
-	//These do not seem to be needed
-	//Set out = $REPLACE(out,"&","&amp;")
-	//Set out = $REPLACE(out,"&","&amp;")
-	Quit out
+	Quit $ZCVT(string,"O","HTML")
 }
 
 /// Alerts
@@ -3778,4 +3754,3 @@ CopyToLog(InputFile,Caption,SkipSize=0)
 	Close InputFile
 	Quit
 	
-
