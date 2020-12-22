@@ -1800,6 +1800,8 @@ LogCubeDimensions
 	Do WriteLog("</table>",2)
 	//Alert if incompatible time levels are found
  	Do alertTimeLevels(.timeLevels,.alerts)
+	//Alert if non-time levels have non-unique parents
+	Do alertBadHierarchies(cube,.alerts)
  	//Show calculated members in ^DeepSee.CalcMbrs
 	Do WriteLog("<h4>Calculated Members</h4>",2)
 	If $D(^DeepSee.CalcMbrs(cube)) {
@@ -3533,6 +3535,33 @@ alertTimeLevels(timeLevels,alerts) {
 	Quit tSC
 }
 
+alertBadHierarchies(cube,alerts) {
+	Set tSC=$$$OK
+
+	Set tSC=##class(%DeepSee.Utils).%GetDimensionTables(cube,.tables)
+	Set tTable=$O(tables(""))
+	While tTable'="" {
+		Try {
+			Set tDimension=$Piece(tTable,".",3)
+			Set:$Extract(tDimension,1,4)="Star" tDimension="Dx"_$Extract(tDimension,5,*)
+			Set tSQL="SELECT COUNT(DISTINCT "_tDimension_") UniqueMembers, COUNT(*) TotalMembers FROM "_##class(%DeepSee.Utils).%GetSQLTableName(tTable)
+			Set tSQLRS=##class(%SQL.Statement).%ExecDirect(,tSQL)
+			Do tSQLRS.%Next()
+			If tSQLRS.UniqueMembers'=tSQLRS.TotalMembers {
+				// BAD HIERARCHY
+				Set pre="title=""Bad Hierarchy"">"
+				Set alert = "The "_tDimension_" star table in the "_cube_" cube contains members with non-unique parents"
+				Set alerts($I(alerts)) = pre_alert
+				Do WriteLog("<p class=""red"" "_pre_alert_"</p>",0)
+			}
+		} Catch {
+		}
+
+		Set tTable=$O(tables(tTable))
+	}
+
+	Quit tSC
+}
 
 /// Write, I/O, etc helper functions
 WriteLog(string,spaces)
