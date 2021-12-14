@@ -123,9 +123,25 @@ GetNamespace(namespace) {
 		Write !!,"Type namespace ["_$Namespace_"]"
 		Read namespace
 		Set:namespace="" namespace = $Namespace
+		If namespace="?" {
+			Do ListNamespaces()
+			Set namespace=""
+			Continue
+		}
 		Set namespace=$$ValidateNamespace(namespace)
 	}
 	Quit namespace
+}
+
+ListNamespaces() {
+	Write !,"Available Namespaces:",!
+	Do ##class(%SYS.Namespace).ListAll(.nsarray)
+	Set ns=$O(nsarray(""))
+	While ns'="" {
+		Write ns,!
+		Set ns=$O(nsarray(ns))
+	}
+	Quit
 }
 
 GetCubesToLog(cubeString,namespace,tracking=0) {
