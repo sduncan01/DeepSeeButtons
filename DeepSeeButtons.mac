@@ -1664,7 +1664,7 @@ LogCubeInfo
 				Set tCount = tCount + 1
 				Set tSC = $G(^DeepSee.BuildErrors(cube,k))
 				Write $J($FNUMBER(tCount,"O,"),5),$J("",3),"Source ID: ",k
-				Write !,?8,$System.Status.GetErrorText(tSC),!!
+				Write !,?8,$zconvert($System.Status.GetErrorText(tSC),"O","HTML"),!!
 				If (tCount>1000) {
 					Write !,?0,"... skipping build errors ..."
 					Write !
