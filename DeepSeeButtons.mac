@@ -2088,12 +2088,14 @@ LogQuerylog
 	ZN namespace
 	Do:($D(^DeepSee.QueryLog)<10) WriteLog("<p>Query log global not found</p></div></div>",2)
 	Quit:($D(^DeepSee.QueryLog)<10)
-	//Get usercount in ^DeepSee.QueryLog
+	//Get usercount and querycount in ^DeepSee.QueryLog
  	Set user=$O(^DeepSee.QueryLog(""))
  	Set usercount=0
+	Set querycount=0
  	While (user'="") {
  		Set userqueries(user)=$G(^DeepSee.QueryLog(user))
 		Set usercount=$I(usercount)
+		Set querycount=$I(querycount,userqueries(user))
 		Set user=$O(^DeepSee.QueryLog(user))
  	}	
  	//Show table with number of queries run by users
@@ -2104,7 +2106,7 @@ LogQuerylog
 		Do WriteLog("<tbody>",4)
 		Do WriteLog("<tr>",6)
 		Do WriteLog("<th onclick=""sortTable(this,0,1)"">User ("_usercount_" total) </th>",8)
-		Do WriteLog("<th onclick=""sortTable(this,1,0)"">Queries run</th>",8)
+		Do WriteLog("<th onclick=""sortTable(this,1,0)"">Queries run ("_querycount_" total) </th>",8)
 		Do WriteLog("</tr>",6)
 		Set u = $O(userqueries(""))
 		While (u'="") {
