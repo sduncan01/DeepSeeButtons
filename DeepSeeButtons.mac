@@ -3672,7 +3672,7 @@ NewFile(LogFilePrefix,LogFileSuffix)
 	New Date,Dir,NewFile,Time
 	Set:LogFileSuffix="" LogFileSuffix="html"
 	Set Date=$TRANSLATE($ZD($H,3),"-","")
-	Set Time=$TRANSLATE($ZT($H,2),":","")
+	Set Time=$TRANSLATE($ZT($P($H,",",2),2),":","")
 	If (OS?1"Win".e) {
 		Set LogFileSuffix=$ZConvert(LogFileSuffix,"l")
 	} ElseIf (OS="UNIX") {
