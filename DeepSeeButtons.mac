@@ -163,7 +163,7 @@ GetCubesToLog(cubeString,namespace,tracking=0) {
 
 GetLogsConfirm
 	ZN "%SYS"	
-	Write !, "Include cconsole.log, Query Log, and DeepSee Logs? [Y] "
+	Write !, "Include "_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log")_", Query Log, and DeepSee Logs? [Y] "
 	Read getLogs
 	Set getLogs=$ZCONVERT(getLogs,"U")
 	If (getLogs="") {
@@ -2095,8 +2095,8 @@ LogOtherCubeElements
 LogQuerylog
 	//Get last N queries run by each user, where N can be secretly chosen from the prompt instead of Y/N
 	
-	Do WriteUpdate("Getting Query Log, DeepSee logs, and cconsole.log")
-	Do:tracking WriteTrack("getlogs","Getting Query Log, DeepSee logs, and cconsole.log","")
+	Do WriteUpdate("Getting Query Log, DeepSee logs, and "_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log"))
+	Do:tracking WriteTrack("getlogs","Getting Query Log, DeepSee logs, and "_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log"),"")
 	Do WriteLog("<div id=""queryLogMainDiv"" onmouseover=""highlightLink(this,1)"" onmouseout=""highlightLink(this,0)"">")
 	Do WriteParagraph("querylog","Query Log")
 	Do WriteLog("<h4 id=""querylogtoggle"" onclick=""javascript:toggle('querylogdiv',this.id);"">&rtrif; Expand</h4>",2)
@@ -2268,25 +2268,25 @@ LogCPF
 
 LogCConsole
 	Try {
-		//Processes cconsole.log
+		//Processes cconsole.log/messages.log
 		New cconsoleFile,cconsoleSize,x
 		Do WriteLog("<div id=""cconsoleMainDiv"" onmouseover=""highlightLink(this,1)"" onmouseout=""highlightLink(this,0)"">")
-		Do WriteParagraph("cconsole","cconsole.log")
+		Do WriteParagraph("cconsole",$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log"))
 		Do WriteLog("<h4 id=""cconsoletoggle"" onclick=""javascript:toggle('cconsolediv',this.id);"">&rtrif; Expand</h4>",2)
 		Do WriteLog("<div id=""cconsolediv"" style=""display:none;"">",2)
 		Do WriteLog("<pre>",4)
 		Use PDev
 		If $Data(NoRun("cconsole")) Do  Quit
-		.	Do WriteLog(""),WriteLog("cconsole.log information inhibited by User.")
+		.	Do WriteLog(""),WriteLog($select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log")_" information inhibited by User.")
 		.	Do WriteLog("</pre>",4)
 		.	Do WriteLog("</div>",2)
 		.	Do WriteLog("</div>")
 		.	Use PDev
 		
 		If OS?1"Win".e!(OS="UNIX"){
-			Set cconsoleFile=MgrDir_DirDelim_"cconsole.log"
+			Set cconsoleFile=MgrDir_DirDelim_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log")
 		} Else {
-			Set:(OS="VMS") cconsoleFile=MgrDir_"CCONSOLE.LOG"
+			Set:(OS="VMS") cconsoleFile=MgrDir_$$$UPPER($select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log"))
 		}
 		Set cconsoleSize=$ZUtil(140,1,cconsoleFile)
 		If 'cconsoleSize Do  Quit
@@ -2303,10 +2303,10 @@ LogCConsole
 		} Else {
 			Set SkipSize=0
 		}
-		Do CopyToLog(cconsoleFile,"Cach&eacute; cconsole.log",SkipSize)
+		Do CopyToLog(cconsoleFile,$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log"),SkipSize)
 	} Catch(ex) {
 		Set tSC = ex.AsStatus()
-		Do WriteLog("Error in logging the cconsole.log file")
+		Do WriteLog("Error in logging the "_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log")_" file")
 	}
 	Do WriteLog("</pre>",4)
 	Do WriteLog("</div>",2)
@@ -2602,7 +2602,7 @@ LogSidePanel(cubeList,getLogs,numalerts)
 	Do WriteLog("<a id=""lcpfMainDiv"" href=""#cpf"" onclick=""javascript:toggle('cpfdiv','cpftoggle');"""_
 	            "title=""The Cach&eacute; Parameter File containing recording the Cach&eacute; configuration"">cache.cpf</a>",2)
 	Do:getLogs WriteLog("<a id=""lcconsoleMainDiv"" href=""#cconsole"" onclick=""javascript:toggle('cconsolediv','cconsoletoggle');"""_
-	            "title=""cconsole.log file containing general messages and errors"">cconsole.log</a>",2)
+	            "title="""_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log")_" file containing general messages and errors"">"_$select(##class(%SYSTEM.Version).GetProduct()["IRIS":"messages.log",1:"cconsole.log")_"</a>",2)
   	Do WriteLog("<a id=""lmappingsDiv"" href=""#Mappings"" title=""Global mapppings defined for the "_namespace_" namespace"">Mappings</a>",2)
   	Do WriteLog("<a id=""lLocalDBDiv"" href=""#LocalDB"" title=""Local databases defined in the instance"">Local Databases</a>",2)  	
   	Do WriteLog("<a id=""lTaskscheduleDiv"" href=""#Taskschedule"" title=""Information on background tasks"">Task Schedule</a>",2)
@@ -3760,9 +3760,9 @@ ExitCmdNoFile
 	Quit
 
 CopyToLog(InputFile,Caption,SkipSize=0)
-	//Appends a file to LogFile. Used for cconsole.log
-	//InputFile can be cconsole.log, the generated cstat output file, inuse.dmp or dumpkeys.txt
-	//SkipSize - Skip the first x number of bytes in the file to reduce size. Used by cconsole.log
+	//Appends a file to LogFile. Used for cconsole.log/messages.log
+	//InputFile can be cconsole.log/messages.log, the generated cstat output file, inuse.dmp or dumpkeys.txt
+	//SkipSize - Skip the first x number of bytes in the file to reduce size. Used by cconsole.log/messages.log
 	//to keep it a reasonable size
 	New %DAT,%TIM,x
 	Do INT^%D,INT^%T
