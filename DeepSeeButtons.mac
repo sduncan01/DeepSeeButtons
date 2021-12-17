@@ -1160,10 +1160,6 @@ LogBuildSynchSection
 					Do WriteLog("<tr>",8)
 					Do WriteLog("<td>"_cubename_"</td>",10)	//cubename
 					
-					
-					
-					
-					
 					/// Keep an eye on this. Does it perform well?					
 					// COUNT(*) - Check Extent Size.
  					Set cube = $zu(28,cubename,5)
@@ -1199,10 +1195,6 @@ LogBuildSynchSection
 							Do WriteLog("<td title='No Bitmap index found in SQL table'></td>",8)
 						}
 					}
-	
-					
-					
-					
 					
 					Set lastmod=$zdt($LG(plist(cubenode),3),3)				//last cube compile
 					Set facts=##class(%DeepSee.Utils).%GetCubeFactCount(cubename)	//number of facts
