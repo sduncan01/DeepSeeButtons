@@ -737,6 +737,7 @@ LogDeepSeeSetupSection
 			If $D(DSTimeMapFrom(namespace)){
 				Set sc = $$alertDStimeRW(DSTimeMapFrom(namespace),.alerts)
 			}
+			Set sc = $$alertAgentMappings(namespace,.alerts)
 		}	
 		Do WriteLog("</td>",8)
 		Do WriteLog("</tr>",6)
@@ -3387,6 +3388,42 @@ alertDStimeRW(DSTimeMapFrom,alerts) {
 	} Catch (ex) {
 		Set tSC = ex.AsStatus()
 		Do $System.Status.DisplayError(tSC)
+	}
+	Quit tSC
+}
+
+alertAgentMappings(ns,alerts) {
+	Try{
+		// Loop through all NS and check agents global. Make sure # of NS = # of DBs
+		ZN "%SYS"	
+		Set tSC = $$$OK
+		// get list of NS
+		Do ##class(%SYS.Namespace).ListAll(.nsarray)
+		Set tempNS=$O(nsarray(""))
+		While tempNS'="" {
+			Set sysdir=##class(%SYS.Namespace).GetGlobalDest(tempNS,"^DeepSee.Agents")
+			//sysdir is system^directory, but only the directory is needed for the following call
+			Set DB=##class(SYS.Database).%OpenId($P(sysdir,"^",2))
+			Do ##Class(Config.Databases).DatabasesByDirectory($P(sysdir,"^",1),$P(sysdir,"^",2),.listDB)
+			Set DBname=$LISTTOSTRING(listDB,",") //In general I would expect one DB but there could be more
+			Set dbArray(DBname)=$I(dbArray(DBname))
+			Set dbArray(DBname,dbArray(DBname))=tempNS
+			Set tempNS=$O(nsarray(tempNS))
+		}
+
+		Set dbName=$O(dbArray(""))
+		While dbName'="" {
+			If (dbArray(dbName)>1) {
+				Set pre="title=""Agent globals can not be shared across namespaces"">"
+				Set alert = "Alert: Database "_dbName_" has ^DeepSee.Agents mapped to it from multiple namespaces"
+				Set alerts($I(alerts)) = pre_alert
+				Do WriteLog("<p class=""red"" "_pre_alert_"</p>",8)
+			}
+			Set dbName=$O(dbArray(dbName))
+		}
+	} Catch (ex) {
+		Set tSC = ex.AsStatus()
+		Do WriteLog("<p class=""red"" "_$System.Status.GetErrorText(tSC)_"----ALE</p>",8)
 	}
 	Quit tSC
 }
