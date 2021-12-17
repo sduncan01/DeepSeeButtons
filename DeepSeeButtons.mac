@@ -716,6 +716,10 @@ LogDeepSeeSetupSection
 	
 		If '$D(DSTimeMapFrom(namespace)){
 			Do WriteLog("<p>^OBJ.DSTIME: no mappings defined</p>",10)
+			Set pre="title=""Mapping ^OBJ.DSTIME to a separate database is recommended"">"
+			Set alert = "Alert: No mapping for ^OBJ.DSTIME"
+			Set alerts($I(alerts)) = pre_alert
+			Do WriteLog("<p class=""red"" "_pre_alert_"</p>",8)
 		} Else{
 			Do WriteLog("<p>^OBJ.DSTIME: mapped to "_DSTimeMapFrom((namespace))_"</p>",10)
 		}
@@ -2323,7 +2327,10 @@ LogMappings
 		Do rs.Execute(namespace)	
 		Set next=rs.Next()
 		If ('next) {
-			Do WriteLog("<p>No mappings for the "_namespace_" namespace</p>",2)
+			Set pre="title=""Mapping ^DeepSee Globals to multiple DBs is recommended"">"
+			Set alert = "Alert: No mappings for the "_namespace_" namespace"
+			Set alerts($I(alerts)) = pre_alert
+			Do WriteLog("<p class=""red"" "_pre_alert_"</p>",8)
 			Do WriteLog("</div>")
 			Return
 		}
