@@ -3398,9 +3398,13 @@ alertAgentMappings(ns,alerts) {
 		ZN "%SYS"	
 		Set tSC = $$$OK
 		// get list of NS
-		Do ##class(%SYS.Namespace).ListAll(.nsarray)
+		Do ##class(%SYS.Namespace).ListAll(.nsarray,0)
 		Set tempNS=$O(nsarray(""))
 		While tempNS'="" {
+			If $E(tempNS)="@" {
+				Set tempNS=$O(nsarray(tempNS))
+				continue
+			}
 			Set sysdir=##class(%SYS.Namespace).GetGlobalDest(tempNS,"^DeepSee.Agents")
 			//sysdir is system^directory, but only the directory is needed for the following call
 			Set DB=##class(SYS.Database).%OpenId($P(sysdir,"^",2))
