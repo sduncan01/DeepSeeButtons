@@ -3052,7 +3052,7 @@ GetRelationships(cube){
 	Set nodenum=$O(dimlist(""),-1)			//Get last node in dimlist
 	Set count=0
 	If status=1 {
-		For {
+		While nodenum'="" {
 			If $LG(dimlist(nodenum,0,0),1)="r"{			//If dimension is a relationship...
 				Set count=count+1						//increment count
 				Set dimname=$LG(dimlist(nodenum,0,0),2)	//Get name of relationship
