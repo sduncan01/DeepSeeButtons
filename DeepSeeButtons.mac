@@ -1576,18 +1576,15 @@ LogCubeInfo
 		    Set:(filterspec="") filterspec = "filterspec property not defined"
 		    Do WriteLog("<p>filterSpec: "_filterspec_"</p>",10)
 	    }
-	    Set method = ##class(%Dictionary.CompiledMethod).%OpenId(cubeclass_"||%OnProcessFact")
-	    If ((method="")||(method.Origin="%DeepSee.CubeDefinition")) {
-		    Do WriteLog("<p>%OnProcessFact method not found in subject area class</p>",10)
-	    } ElseIf (method.Origin=cubeclass) {
-			Do WriteLog("<p>%OnProcessFact method defined in subject area class</p>",10)
-		}
-	    Set method = ##class(%Dictionary.CompiledMethod).%OpenId(cubeclass_"||%OnGetFilterSpec")
-		If ((method="")||(method.Origin="%DeepSee.CubeDefinition")||(method.Origin="%DeepSee.SubjectArea")) {
-			//NB: checking (method="") might be overkill
-			Do WriteLog("<p>%OnGetFilterSpec method not found in subject area class</p>",10)
-		} ElseIf (method.Origin=cubeclass) {
-			Do WriteLog("<p>%OnGetFilterSpec method defined in subject area class</p>",10)
+	    Do WriteLog("</td>",8)
+	    Do WriteLog("</tr>",6)
+	    Do WriteLog("<tr>",6)
+	    Do WriteLog("<td>",8)
+		Do WriteLog("<h4>Callbacks</h4>",10)
+		Set tCallbackSQL="SELECT Name,Origin,* FROM %Dictionary.CompiledMethod WHERE Name %STARTSWITH '%On' AND NOT Origin %STARTSWITH '%' AND Parent=?"
+		Set tCallbackSTMT=##class(%SQL.Statement).%ExecDirect(,tCallbackSQL,cubeclass)
+		While tCallbackSTMT.%Next() {
+			Do WriteLog("<p>"_tCallbackSTMT.%Get("Name")_" method defined in subject area class</p>",10)	
 		}
 	    Do WriteLog("</td>",8)
 	    Do WriteLog("</tr>",6)
