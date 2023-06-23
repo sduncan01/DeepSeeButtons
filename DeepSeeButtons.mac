@@ -724,21 +724,19 @@ LogDeepSeeSetupSection
 			Do WriteLog("<p>^OBJ.DSTIME: mapped to "_DSTimeMapFrom((namespace))_"</p>",10)
 		}
 		//DeepSeeMap is structured as follows: DeepSeeMap(namespace,mapping number)
- 		If NsMap'="" {
-			If $D(DeepSeeMap(namespace,1)){
-				Set NumMaps=$O(DeepSeeMap(namespace,""))
-				While NumMaps {					
-					Do WriteLog("<p>"_DeepSeeMap(namespace,NumMaps)_"</p>",10)
-					Set NumMaps=$O(DeepSeeMap(namespace,NumMaps))
-				}
+		If $D(DeepSeeMap(namespace,1)){
+			Set NumMaps=$O(DeepSeeMap(namespace,""))
+			While NumMaps {					
+				Do WriteLog("<p>"_DeepSeeMap(namespace,NumMaps)_"</p>",10)
+				Set NumMaps=$O(DeepSeeMap(namespace,NumMaps))
 			}
-			Set sc = $$alertCacheMappings(namespace,.alerts)
-			Set sc = $$alertJoinIndexMappings(namespace,.alerts)
-			If $D(DSTimeMapFrom(namespace)){
-				Set sc = $$alertDStimeRW(DSTimeMapFrom(namespace),.alerts)
-			}
-			Set sc = $$alertAgentMappings(namespace,.alerts)
-		}	
+		}
+		Set sc = $$alertCacheMappings(namespace,.alerts)
+		Set sc = $$alertJoinIndexMappings(namespace,.alerts)
+		If $D(DSTimeMapFrom(namespace)){
+			Set sc = $$alertDStimeRW(DSTimeMapFrom(namespace),.alerts)
+		}
+		Set sc = $$alertAgentMappings(namespace,.alerts)
 		Do WriteLog("</td>",8)
 		Do WriteLog("</tr>",6)
 		If ECPCount'=0{
